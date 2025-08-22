@@ -181,7 +181,9 @@ def check_companies():
 
         # Company name on the tile
         try:
-            company_name = card.find_element(By.CSS_SELECTOR, "div.rf-tile-body").text.strip()
+            # company_name = card.find_element(By.CSS_SELECTOR, "div.rf-tile-body").text.strip()
+            company_name = card.find_element(By.CSS_SELECTOR, "div.rf-tile-body h4").text.strip()
+            # company_name = card.find_element(By.CSS_SELECTOR, "div.exhibitor-title h1").text.strip()
             if not company_name:
                 company_name = "Unknown Company"
         except Exception:
