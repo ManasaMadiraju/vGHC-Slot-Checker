@@ -1,4 +1,3 @@
-# Latest Version
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -245,9 +244,9 @@ def check_companies():
 check_companies()
 
 # Schedule every 5 minutes
-schedule.every(5).minutes.do(check_companies)
+# schedule.every(5).minutes.do(check_companies)
 
-print(f"\n{Fore.MAGENTA}⏳ Scheduler started... Will check every 5 minutes.{Style.RESET_ALL}")
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+# print(f"\n{Fore.MAGENTA}⏳ Scheduler started... Will check every 5 minutes.{Style.RESET_ALL}")
+# while True:
+#     schedule.run_pending()
+#     time.sleep(60)
