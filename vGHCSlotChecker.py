@@ -31,6 +31,29 @@ sender_email = os.getenv("SENDER_EMAIL")
 sender_password = os.getenv("SENDER_PASSWORD")
 notify_email = os.getenv("NOTIFY_EMAIL")
 
+# File to track already-notified companies (daily)
+notified_file = "notified_companies.txt"
+
+def load_notified_companies():
+    if os.path.exists(notified_file):
+        with open(notified_file, "r") as f:
+            lines = f.read().splitlines()
+            if lines:
+                saved_date = lines[0].strip()
+                today = datetime.now().strftime("%Y-%m-%d")
+                if saved_date == today:
+                    return set(lines[1:]), saved_date
+    return set(), datetime.now().strftime("%Y-%m-%d")
+
+def save_notified_companies(companies, today):
+    with open(notified_file, "w") as f:
+        f.write(today + "\n")  # first line = date
+        for company in companies:
+            f.write(company + "\n")
+
+# Load notified list at startup
+already_notified, saved_date = load_notified_companies()
+
 
 def send_email(enabled_companies):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -93,6 +116,16 @@ def wait_for_catalog(wait):
 
 
 def check_companies():
+    global already_notified, saved_date
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    if today != saved_date:
+        # reset daily
+        already_notified = set()
+        saved_date = today
+        save_notified_companies(already_notified, today)
+        print(f"{Fore.BLUE}🔄 Reset notified companies for {today}{Style.RESET_ALL}")
+
     print(f"\n{Fore.CYAN}🚀 Running company check...{Style.RESET_ALL}")
 
     chrome_options = webdriver.ChromeOptions()
@@ -219,19 +252,24 @@ def check_companies():
 
     driver.quit()
 
-    # ✅ Only send if at least one company enabled
-    if enabled_companies:
-        print(f"\n{Fore.MAGENTA}📨 Sending email with enabled companies...{Style.RESET_ALL}")
-        send_email(enabled_companies)
+    # ✅ Only send if new companies today
+    new_enabled = [c for c in enabled_companies if c not in already_notified]
+
+    if new_enabled:
+        print(f"\n{Fore.MAGENTA}📨 Sending email with NEW enabled companies...{Style.RESET_ALL}")
+        send_email(new_enabled)
+        already_notified.update(new_enabled)
+        save_notified_companies(already_notified, today)
     else:
-        print(f"{Fore.YELLOW}📭 No enabled companies found. No email sent.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}📭 No NEW enabled companies found today. No email sent.{Style.RESET_ALL}")
 
 
-# Run immediately
+# Run immediately once
 check_companies()
 
-# Optionally schedule
-# schedule.every(5).minutes.do(check_companies)
-# while True:
-#     schedule.run_pending()
-#     time.sleep(60)
+# Schedule to run once daily at 9 AM (you can change time)
+schedule.every().day.at("09:00").do(check_companies)
+
+while True:
+    schedule.run_pending()
+    time.sleep(60)
